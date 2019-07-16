@@ -54,8 +54,7 @@ Ascan = np.abs(np.fft.fft(spectrumLinearizedCompensated, n=Zero))
 
 #Plot Ascan
 plt.figure()
-plt.xlabel('Intensity')
-plt.ylabel('Optical distance')
+plt.xlabel('Optical distance')
+plt.ylabel('Intensity')
 plt.plot(Ascan, 'r')
-#plt.plot(f, 'b', linewidth=1)
 plt.axis('tight')
