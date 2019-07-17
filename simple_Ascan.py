@@ -12,9 +12,8 @@ from scipy.interpolate import interp1d
 # File directory
 filepath = r'C:\Users\mzly903\Desktop\Work\OCT\data4'
 
-filepathDispersion = filepath
 
-# Linearization and dispersion compensation files (Uncomment if different)
+# Linearization and dispersion compensation files
 filepathDispersion = r'C:\Users\mzly903\Desktop\1704\magda'
 
 fileName = input('Enter file name: ')
