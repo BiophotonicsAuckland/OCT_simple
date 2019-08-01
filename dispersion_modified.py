@@ -1,6 +1,6 @@
 
 """
-Created on Thu May 30 11:06:57 2019
+Created on Tue Jul 30 08:06:57 2019
 
 @author: mzly903
 """
@@ -46,7 +46,7 @@ gaussian2 = 1/(sigma * np.sqrt(2 * np.pi))*np.exp( - (x - mu2)**2 / (2 * sigma**
 
 # Just to try
 
-data_raw = 25 # for files with big data set. For single Ascan in the file use 0
+data_raw =21  # for files with big data set. For single Ascan files get rid of data_row everywhere
 
 
 #Walk-off
