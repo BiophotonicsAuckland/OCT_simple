@@ -6,11 +6,8 @@ Created on Thu May 30 11:06:57 2019
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
-from matplotlib.ticker import MaxNLocator
-from matplotlib.ticker import FuncFormatter  
 from matplotlib import pyplot, transforms
 
 
