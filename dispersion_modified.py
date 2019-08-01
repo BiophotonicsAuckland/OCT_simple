@@ -9,6 +9,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
 from matplotlib import pyplot, transforms
+import pandas as pd
+import peakutils
 
 
 # File directory
@@ -73,6 +75,17 @@ absFFT = np.abs(np.fft.fft(spectrum_lin_disp, n=Zero))
 absFFT1 = np.abs(np.fft.fft(spectrum_lin_disp1, n=Zero))
 absFFT2 = np.abs(np.fft.fft(spectrum_lin_disp2, n=Zero))
 
+# Graphs  
+
+
+index = peakutils.indexes(absFFT[2000:15000], thres=0.1, min_dist=100)
+index1 = peakutils.indexes(absFFT1[2000:15000], thres=0.1, min_dist=100)
+index2 = peakutils.indexes(absFFT2[2000:15000], thres=0.1, min_dist=100)
+
+val = [40000]*len(index)
+val1 = [40000]*len(index1)
+val2 = [40000]*len(index2)
+
 #plot
 plt.figure(37)
 #plt.imshow(np.rot90(my_list,1), cmap='binary')
@@ -83,6 +96,10 @@ plt.title('Dispersion Walk-off')
 plt.plot(absFFT/10, 'k', label="Dispersion Walk-off", linewidth=1)
 plt.plot(absFFT1, 'b', label="Dispersion Walk-off", linewidth=1)
 plt.plot(absFFT2, 'r', label="Dispersion Walk-off", linewidth=1)
+plt.plot(2000+index, val, 'k', marker="D", ls="", ms=3 )
+plt.plot(2000+index1,val1, 'b', marker="D", ls="", ms=3 )
+plt.plot(2000+index2,val2, 'r', marker="D", ls="", ms=3 )
+
 y = np.arange(Low_wavelength_cut, High_wavelength_cut, (High_wavelength_cut-Low_wavelength_cut)/vector_length)
 plt.figure(38)
 plt.plot(y, spectrum[data_raw, 54 : 54+1888])
