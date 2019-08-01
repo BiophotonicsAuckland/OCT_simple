@@ -15,7 +15,7 @@ from matplotlib import pyplot, transforms
 filepath_res = r'C:\Users\mzly903\Desktop\Work\OCT\data5'
 name = 'Saphire0deg_v2.txt'
 
-# Linearization and dispersion compensation files (Uncomment if different)
+# Linearization and dispersion compensation files 
 
 filepath2 = r'C:\Users\mzly903\Desktop\1704\magda'
 filename_lin_phase = 'lin_st54_len1888'
