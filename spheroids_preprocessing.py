@@ -73,8 +73,12 @@ class DataProcessing:
         mu = cw
         x = np.linspace(wavelength_from, wavelength__to, pixels)
         gaussian_distribution = stats.norm.pdf(x, mu, sigma)
+        max_ = max(gaussian_distribution)
+        for l in range(len(gaussian_distribution)):
+            gaussian_distribution[l] = gaussian_distribution[l]/max_
 
         return gaussian_distribution
+
 
 
     def apply_gauss_window(self, cw, sigma, pixels = 2048, wavelength_from = 766.8, wavelength__to = 920 ):
@@ -402,7 +406,7 @@ def refractive_ind(peak1, peak2, geometrical_point):
 
 def norm_inten(data_row):
     print("start")
-    return [float(i)/max(data_row) for i in data_row]
+    return [float(i)*40/max(data_row) for i in data_row]
 
 def norm_gvd(data1, data2, peak1, peak2):
     dif = int((int(peak1) - int(peak2)))
@@ -415,19 +419,19 @@ def norm_gvd(data1, data2, peak1, peak2):
         mod_data2 = data2[:]
     return [mod_data1, mod_data2, dif]
 
-
 plt.close("all")
-
 
 ### Load all d (day 7) spheroids ###
 
 files = glob.glob('C:/Users/mzly903/Desktop/PhD/2. Data/1. Spheroids/Experiment 4 21 Jan 2017/21JanMeasurements/d*.txt')
-with open('spheroids' + date_time +'.csv', 'a') as newFile:
+with open('spheroids' + date_time +'.csv', 'a', newline='') as newFile:
     newFileWriter = csv.writer(newFile)
-    newFileWriter.writerow(['name', 'Ascan', 'ri', 'walks normalized',
-                            'Geometrical Distance'])
-for yu in files[:1]:
+    newFileWriter.writerow(['name', 'Ascan', "cw1", "cw2" ,"sigma" ,'ri',
+                            "Oprtical_distance1","Oprtical_distance2",'walks normalized',
+                            'Geometrical Distance', 'Optical Distnace', ''])
+for yu in files[44:45]:
 # upload file and get its name
+    plt.close("all")
     file = np.loadtxt(yu)
     name = yu[-10:]
 
@@ -435,19 +439,33 @@ for yu in files[:1]:
     proccessed_data = DataProcessing(file, name)  #### create a DataProcessing object
     bscan = proccessed_data.fourrier(Zero = 2**zero_pad_image) #### apply method
     recognition = ComputerVision(bscan, name) #### create a ComputerVision object
-    line_geo = geom_line(bscan) ## geometrical line for RI
-    b = recognition.where_to_crop() ## recognition part
-
+   
+    b = np.array(recognition.where_to_crop()) ## recognition part
+    line_geo = geom_line(bscan[b[0]: b[1]]) ## geometrical line for RI
 #make sure the image is ok   
     plt.figure()
-    plt.imshow(np.rot90(bscan), cmap = "gray")
+
+    plt.imshow(np.rot90(bscan[b[0]:b[1]]), cmap = "gray")
     plt.clim([0, 10000])
     plt.axis("tight")
 # draw a line for geometrical thickness
     plt.plot(line_geo)
     plt.title("Make sure line is properly detected and click anywhere")
 # this ginput just to stop a program and see the image
-    plt.ginput()
+    ttt = plt.ginput()
+
+    
+    print(ttt)
+    if ttt[0][0] < 3:
+        print("Bscan repeat", yu)
+        filename =  'dataf1.txt'   
+
+        with open(filename, "w+") as json1:
+            text = "Repeat " + str(yu)
+            json1.write(text)
+
+        continue
+        
 # declare new object of CombuterVision class
     croped_signal = ComputerVision(bscan[b[0]:b[1]], name)
 # get surface interpolation points to show on the Ascan    
@@ -455,28 +473,109 @@ for yu in files[:1]:
     
     print(name)
     #### Work with every Ascan to collect as much data as possible ####
-    for ascan in range(b[0], b[0]+1):
+    sigma1 = 30
+    sigma2 = 15
+    cw_l1 = 810
+    cw_l2 = 830
+    cw_h1 = 880
+    cw_h2 = 870
+    
+    def g_window(cw, sigma, pixels = 2048, wavelength_from = 766.8, wavelength__to = 920):
+        
+        """" 
+        Returns a list with Gaussian distribution
+        
+        """
+        
+        mu = cw
+        x = np.linspace(wavelength_from, wavelength__to, pixels)
+        gaussian_distribution = stats.norm.pdf(x, mu, sigma)
+        max_ = max(gaussian_distribution)
+        for l in range(len(gaussian_distribution)):
+            gaussian_distribution[l] = gaussian_distribution[l]/max_
+
+        return gaussian_distribution
+    show_gauss1 = g_window(cw_l1, sigma1)
+    show_gauss2 = g_window(cw_l2, sigma1)
+    show_gauss3 = g_window(cw_h1, sigma1)
+    show_gauss4 = g_window(cw_h2, sigma1)
+    show_gauss5 = g_window(cw_l1, sigma2)
+    show_gauss6 = g_window(cw_l2, sigma2)
+    show_gauss7 = g_window(cw_h1, sigma2)
+    show_gauss8 = g_window(cw_h2, sigma2)
+    
+    for_check = 77
+    check = file[for_check]
+    x = np.linspace(766.8, 920, 2048)
+    for yt in range(len(check)):
+        check[yt] = check[yt]/max(check)
+    plt.figure()
+    plt.plot(x,check)
+    plt.plot(x,show_gauss1, "b")
+    plt.plot(x,show_gauss2, "b")
+    plt.plot(x,show_gauss3, "r")
+    plt.plot(x,show_gauss4, "r")
+    plt.plot(x,show_gauss5, "b")
+    plt.plot(x,show_gauss6, "b")
+    plt.plot(x,show_gauss7, "r")
+    plt.plot(x,show_gauss8, "r")
+    plt.axvline(x=cw_l1, c = "b")
+    plt.axvline(x=cw_l2, c = "b")
+    plt.axvline(x=cw_h1, c = "r")
+    plt.axvline(x=cw_h2, c = "r")
+    plt.title(f"Spectrum {for_check} and all Gaussian Windows")
+    
+    for ascan in range(b[0], b[1]):
+        
         
         current_ascan = bscan[ascan] # work on each Ascan
+        
         octf.showme(current_ascan, name + str(ascan)) # show Ascan
         cut_noise = int(len(bscan[ascan])/100) # get rid of artificial first peak 
         print("Argmax", cut_noise +  np.argmax(current_ascan[cut_noise:int(cut_noise*50)]),"Line", geometrical_points[ascan - b[0]])
 
         specrum = DataProcessing(file[ascan], name) # new object of DataProcessing class
 
-        wave1 = specrum.apply_gauss_window(cw = 810, sigma=30) #gaussian 1
-        wave2 = specrum.apply_gauss_window(cw = 880, sigma=30) #gaussian 2
+        wave1 = specrum.apply_gauss_window(cw = cw_l1, sigma=sigma1) #gaussian 1
+        wave2 = specrum.apply_gauss_window(cw = cw_h1, sigma=sigma1) #gaussian 2
+        wave3 = specrum.apply_gauss_window(cw = cw_l2, sigma=sigma1) #gaussian 1
+        wave4 = specrum.apply_gauss_window(cw = cw_h2, sigma=sigma1) #gaussian 2
+        
+        wave12 = specrum.apply_gauss_window(cw = cw_l1, sigma=sigma2) #gaussian 1
+        wave22 = specrum.apply_gauss_window(cw = cw_h1, sigma=sigma2) #gaussian 2
+        wave32 = specrum.apply_gauss_window(cw = cw_l2, sigma=sigma2) #gaussian 1
+        wave42 = specrum.apply_gauss_window(cw = cw_h2, sigma=sigma2) #gaussian 2
         
         profile = DataProcessing(file[ascan], name) # depth profile full spectrum
+        
         profile1 = DataProcessing(wave1, name) # depth profile gaussain 1
         profile2 = DataProcessing(wave2, name)# depth profile gaussain 2
+        
+        profile3 = DataProcessing(wave3, name) # depth profile gaussain 1
+        profile4 = DataProcessing(wave4, name)# depth profile gaussain 2
+        
+        profile12 = DataProcessing(wave12, name) # depth profile gaussain 1
+        profile22 = DataProcessing(wave22, name)# depth profile gaussain 2
+        
+        profile32 = DataProcessing(wave32, name) # depth profile gaussain 1
+        profile42 = DataProcessing(wave42, name)# depth profile gaussain 2
         
         # Increase zero padding 
         zero_pad_graph = 19
         
         graph = profile.fourrier(Zero = 2**zero_pad_graph) 
+       
         graph1 = profile1.fourrier(Zero = 2**zero_pad_graph)
         graph2 = profile2.fourrier(Zero = 2**zero_pad_graph)
+        
+        graph3 = profile3.fourrier(Zero = 2**zero_pad_graph)
+        graph4 = profile4.fourrier(Zero = 2**zero_pad_graph)
+        
+        graph12 = profile12.fourrier(Zero = 2**zero_pad_graph)
+        graph22 = profile22.fourrier(Zero = 2**zero_pad_graph)
+        
+        graph32 = profile32.fourrier(Zero = 2**zero_pad_graph)
+        graph42 = profile42.fourrier(Zero = 2**zero_pad_graph)
         
         ##### Cut first (noise) peak and mirror half of the Ascan
         noise_level = int(len(graph)/100)
@@ -484,21 +583,43 @@ for yu in files[:1]:
         graph1 = graph1[noise_level:noise_level*50]
         graph2 = graph2[noise_level:noise_level*50]
         
+        graph3 = graph3[noise_level:noise_level*50]
+        graph4 = graph4[noise_level:noise_level*50]
+
+        graph12 = graph12[noise_level:noise_level*50]
+        graph22 = graph22[noise_level:noise_level*50]
+        
+        graph32 = graph32[noise_level:noise_level*50]
+        graph42 = graph42[noise_level:noise_level*50]        
+        
         # New zero padding requires new miltiplication factor for actual (geometrical) position of the petri dish surface     
 
         vl2 = geometrical_points[ascan - b[0]]*(2**(zero_pad_graph-zero_pad_image))
         vl2 = vl2 - noise_level # to take into account "cut first (noise) peak"
         
         # show Ascan + line of actual surface (line on the graph)
-        octf.showme(graph1, name + "\n Ascan " + str(ascan) + "\n To discard click on the value above 1/2 max")
+        octf.showme(graph, name + "\n Ascan " + str(ascan) + "\n To discard click on the value above 1/2 max")
         plt.plot(graph2)
+        plt.plot(graph1)
+        
+        
         # draw line of the surface
         plt.axvline(x=vl2, c = "r")
         # select 2 regions (4 points - one "from" another "to" for each region)what you want to zoom
         c_f_p_big = plt.ginput(4)
-        if c_f_p_big[0][1] > max(graph1)/2: # click on the top of the graph if you don't want to save
+        if c_f_p_big[0][1] > max(graph1)*0.75: # click on the top of the graph if you don't want to save
             continue
+        
+        f_peak_ri = peak_detection(graph,from_ =  int(c_f_p_big[0][0]), to = int(c_f_p_big[1][0]))
+        l_peak_ri = peak_detection(graph,from_ =  int(c_f_p_big[2][0]), to = int(c_f_p_big[3][0]))
+        
+        ri = refractive_ind(f_peak_ri, l_peak_ri, vl2)
+        print("refractive index", ri)
+        if ri > 1.44 or ri < 1.34:
+            continue        
+        
         # show first region (usually first peak)
+
         plt.figure()
         plt.plot(graph1[int(c_f_p_big[0][0]):int(c_f_p_big[1][0])])
         plt.plot(graph2[int(c_f_p_big[0][0]):int(c_f_p_big[1][0])])
@@ -507,14 +628,28 @@ for yu in files[:1]:
         c_f_p = plt.ginput(2)
         length = len(graph1[int(c_f_p_big[0][0]):int(c_f_p_big[1][0])])
         max_ = max(graph1[int(c_f_p_big[0][0]):int(c_f_p_big[1][0])])
-        if c_f_p[0][0] > length*2/3 and c_f_p[0][0] > max_/2:
+        if c_f_p[0][0] > length*0.7 and c_f_p[0][1] > max_*0.75:
+            print(f"Ascan {ascan} skipped")
             continue
         # detect first peak for Full spectrum, wave1 and wave2
         f_peak = int(c_f_p_big[0][0]) + peak_detection(graph,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
         f_peak1 = int(c_f_p_big[0][0]) + peak_detection(graph1,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
         f_peak2 = int(c_f_p_big[0][0]) + peak_detection(graph2, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        f_peak3 = int(c_f_p_big[0][0]) + peak_detection(graph3,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        f_peak4 = int(c_f_p_big[0][0]) + peak_detection(graph4, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+           
+        f_peak12 = int(c_f_p_big[0][0]) + peak_detection(graph12,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        f_peak22 = int(c_f_p_big[0][0]) + peak_detection(graph22, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        f_peak32 = int(c_f_p_big[0][0]) + peak_detection(graph32,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        f_peak42 = int(c_f_p_big[0][0]) + peak_detection(graph42, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+           
+            
+        
         # show second region (usually second peak)
+        # n_graph = norm_inten(graph[int(c_f_p_big[2][0]):int(c_f_p_big[3][0])])
+
         plt.figure()
+        # plt.plot(n_graph)
         plt.plot(graph1[int(c_f_p_big[2][0]):int(c_f_p_big[3][0])])
         plt.plot(graph2[int(c_f_p_big[2][0]):int(c_f_p_big[3][0])])
         plt.title(f"Ascan {ascan} from file {name} \n to discard click on x > 2/3 len and y > 1/2 max")
@@ -522,30 +657,81 @@ for yu in files[:1]:
         c_f_p = plt.ginput(2)
         length = len(graph1[int(c_f_p_big[2][0]):int(c_f_p_big[3][0])])
         max_ = max(graph1[int(c_f_p_big[2][0]):int(c_f_p_big[3][0])])
-        if c_f_p[0][0] > length*2/3 and c_f_p[0][0] > max_/2:
+        if c_f_p[0][0] > length*2/3 and c_f_p[0][1] > max_*0.7:
+            print(f"Ascan {ascan} skipped")
             continue
     # detect bottom peak for Full spectrum, wave1 and wave2
         l_peak = int(c_f_p_big[2][0])  + peak_detection(graph,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
         l_peak1 = int(c_f_p_big[2][0])  + peak_detection(graph1,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
         l_peak2 = int(c_f_p_big[2][0])  + peak_detection(graph2, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
- # normalization gvd
+        l_peak3 = int(c_f_p_big[2][0])  + peak_detection(graph3,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        l_peak4 = int(c_f_p_big[2][0])  + peak_detection(graph4, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+
+        l_peak12 = int(c_f_p_big[2][0])  + peak_detection(graph12,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        l_peak22 = int(c_f_p_big[2][0])  + peak_detection(graph22, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        l_peak32 = int(c_f_p_big[2][0])  + peak_detection(graph32,from_ =  int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        l_peak42 = int(c_f_p_big[2][0])  + peak_detection(graph42, from_ = int(c_f_p[0][0]), to = int(c_f_p[1][0]))
+        
+    # normalization gvd
         gvd_graph = norm_gvd(graph1, graph2, f_peak1, f_peak2)
-  # make sure everything okay graph       
+  # make sure everything is okay graph       
+
         plt.figure()
         plt.plot(gvd_graph[0])
         plt.plot(gvd_graph[1])
      # refr index   
-        ri = refractive_ind(f_peak, l_peak, vl2)
-         # walk-off   
-        walk_off = f_peak1 - f_peak2
 
-        extract_data = DataFeautures(current_ascan, name)
+         # walk-off 
+        
+        optical_dist_full = (l_peak - f_peak)
+        
+        optical_dist_l1 = (l_peak1 - f_peak1)
+        optical_dist_h1 = (l_peak2 - f_peak2)
+        optical_dist_l2 = (l_peak3 - f_peak3)
+        optical_dist_h2 = (l_peak4 - f_peak4)
+
+        optical_dist_l3 = (l_peak12 - f_peak12)
+        optical_dist_h3 = (l_peak22 - f_peak22)
+        optical_dist_l4 = (l_peak32 - f_peak32)
+        optical_dist_h4 = (l_peak42 - f_peak42)
+        
+        walk_off1 = optical_dist_h1 - optical_dist_l1
+        
+        walk_off2 = optical_dist_h2 - optical_dist_l2
+        
+        walk_off3 = optical_dist_h3 - optical_dist_l3
+        
+        walk_off4 = optical_dist_h4 - optical_dist_l4
+
+
         print('Ascan:', ascan)
         print('RI:', ri)
-        save = input("to save press Y: ")
-        if save == 'y':
-            with open('spheroids' + date_time +'.csv', 'a') as newFile:
+        # save = input("to save press Y: ")
+        save = 'n'
+        if save.lower() == 'y':
+            with open('spheroids' + date_time +'.csv', 'a', newline='') as newFile:
                 newFileWriter = csv.writer(newFile)
-                newFileWriter.writerow([name, ascan, ri, walk_off, vl2 - f_peak])
-
+                newFileWriter.writerow([name, ascan, cw_l1, cw_h1, sigma1,
+                                        ri,optical_dist_l1, optical_dist_h1,
+                                        walk_off1, vl2 - f_peak,
+                                        l_peak - f_peak])
+                
+            with open('spheroids' + date_time +'.csv', 'a', newline='') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([name, ascan,cw_l2, cw_h2, sigma1, ri,
+                                        optical_dist_l2, optical_dist_h2,
+                                        walk_off2, vl2 - f_peak,
+                                        l_peak - f_peak])
+            with open('spheroids' + date_time +'.csv', 'a', newline='') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([name, ascan, cw_l1, cw_h1, sigma2, ri,
+                                        optical_dist_l3, optical_dist_h3,
+                                        walk_off3, vl2 - f_peak,
+                                        l_peak - f_peak])
+            with open('spheroids' + date_time +'.csv', 'a', newline='') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([name, ascan, cw_l2, cw_h2, sigma2,  ri,
+                                        optical_dist_l4, optical_dist_h4,
+                                        walk_off4, vl2 - f_peak,
+                                        l_peak - f_peak])
  
